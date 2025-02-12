@@ -18,10 +18,10 @@ type
 
   // Declaration in Delphi 11 & 12.2 lacks EfficiencyClass
   TProcessorRelationship = record
-    Flags: BYTE;
-    EfficiencyClass: BYTE;
-    Reserved: array[0..19] of BYTE;
-    GroupCount: WORD;
+    Flags: Byte;
+    EfficiencyClass: Byte;
+    Reserved: array[0..19] of Byte;
+    GroupCount: Word;
     GroupMask: array[0..0] of GROUP_AFFINITY;
   end;
 
