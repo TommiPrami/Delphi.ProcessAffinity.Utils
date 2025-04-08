@@ -160,10 +160,8 @@ begin
   var LNewMask: NativeUInt := ANewMask and LSystemMask;
 
   if (LNewMask <> 0) and (LNewMask <> LProcessMask) then
-  begin
     if SetProcessAffinityMask(AProcessHandle, LNewMask) then
       Result := True;
-  end;
 end;
 
 procedure RestoreAffinityMask(const AProcessHandle: THandle);
