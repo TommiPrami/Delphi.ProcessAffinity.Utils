@@ -1,5 +1,10 @@
 ﻿unit Delphi.ProcessAffinity.Utils;
 
+ {
+   Code is highly influenced by the code on Graphics32 project: 
+     - https://github.com/graphics32/graphics32 
+ }
+
 interface
 
   function GetPerformanceAffinityMask(const AProcessHandle: THandle; const AForce: Boolean = False): NativeUInt;
