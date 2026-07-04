@@ -14,41 +14,41 @@ unit Delphi.ProcessAffinity.Utils;
 
 interface
 
-{$IFNDEF MSWINDOWS}
-  {$MESSAGE Error 'Delphi.ProcessAffinity.Utils supports Windows only'}
-{$ENDIF}
+  {$IFNDEF MSWINDOWS}
+    {$MESSAGE Error 'Delphi.ProcessAffinity.Utils supports Windows only'}
+  {$ENDIF}
 
-// Mask of the performance cores ("P-cores") of a hybrid CPU, masked with the system affinity mask.
-// Returns 0 when:
-//   - Windows is older than 10 (EfficiencyClass requires Windows 10)
-//   - the CPU is homogeneous, so there is no efficiency/performance split
-//   - the process affinity mask has already been modified (pass AForce = True to override)
-//   - a WinAPI call fails
-function GetPerformanceAffinityMask(const AProcessHandle: THandle; const AForce: Boolean = False): NativeUInt; overload;
-function GetPerformanceAffinityMask(const AForce: Boolean = False): NativeUInt; overload;
+  // Mask of the performance cores ("P-cores") of a hybrid CPU, masked with the system affinity mask.
+  // Returns 0 when:
+  //   - Windows is older than 10 (EfficiencyClass requires Windows 10)
+  //   - the CPU is homogeneous, so there is no efficiency/performance split
+  //   - the process affinity mask has already been modified (pass AForce = True to override)
+  //   - a WinAPI call fails
+  function GetPerformanceAffinityMask(const AProcessHandle: THandle; const AForce: Boolean = False): NativeUInt; overload;
+  function GetPerformanceAffinityMask(const AForce: Boolean = False): NativeUInt; overload;
 
-// Mask of the efficiency cores ("E-cores") of a hybrid CPU, masked with the system affinity mask.
-// Returns 0 in the same situations as GetPerformanceAffinityMask.
-function GetEfficiencyAffinityMask(const AProcessHandle: THandle; const AForce: Boolean = False): NativeUInt; overload;
-function GetEfficiencyAffinityMask(const AForce: Boolean = False): NativeUInt; overload;
+  // Mask of the efficiency cores ("E-cores") of a hybrid CPU, masked with the system affinity mask.
+  // Returns 0 in the same situations as GetPerformanceAffinityMask.
+  function GetEfficiencyAffinityMask(const AProcessHandle: THandle; const AForce: Boolean = False): NativeUInt; overload;
+  function GetEfficiencyAffinityMask(const AForce: Boolean = False): NativeUInt; overload;
 
-// Process affinity mask, masked with the system affinity mask. Returns 0 on failure.
-function GetAffinityMask(const AProcessHandle: THandle): NativeUInt; overload;
-function GetAffinityMask: NativeUInt; overload;
+  // Process affinity mask, masked with the system affinity mask. Returns 0 on failure.
+  function GetAffinityMask(const AProcessHandle: THandle): NativeUInt; overload;
+  function GetAffinityMask: NativeUInt; overload;
 
-// System affinity mask. The WinAPI queries it through a process handle. Returns 0 on failure.
-function GetSystemAffinityMask(const AProcessHandle: THandle): NativeUInt; overload;
-function GetSystemAffinityMask: NativeUInt; overload;
+  // System affinity mask. The WinAPI queries it through a process handle. Returns 0 on failure.
+  function GetSystemAffinityMask(const AProcessHandle: THandle): NativeUInt; overload;
+  function GetSystemAffinityMask: NativeUInt; overload;
 
-// Sets the process affinity mask. ANewMask is masked with the system affinity mask first.
-// Returns True when the mask was applied or was already in effect,
-// False when the resulting mask is empty or a WinAPI call fails.
-function SetAffinityMask(const AProcessHandle: THandle; const ANewMask: NativeUInt): Boolean; overload;
-function SetAffinityMask(const ANewMask: NativeUInt): Boolean; overload;
+  // Sets the process affinity mask. ANewMask is masked with the system affinity mask first.
+  // Returns True when the mask was applied or was already in effect,
+  // False when the resulting mask is empty or a WinAPI call fails.
+  function SetAffinityMask(const AProcessHandle: THandle; const ANewMask: NativeUInt): Boolean; overload;
+  function SetAffinityMask(const ANewMask: NativeUInt): Boolean; overload;
 
-// Restores the process affinity mask back to the system affinity mask.
-procedure RestoreAffinityMask(const AProcessHandle: THandle); overload;
-procedure RestoreAffinityMask; overload;
+  // Restores the process affinity mask back to the system affinity mask.
+  procedure RestoreAffinityMask(const AProcessHandle: THandle); overload;
+  procedure RestoreAffinityMask; overload;
 
 implementation
 
@@ -73,30 +73,35 @@ type
   end;
   PProcessorRelationship = ^TProcessorRelationship;
 
-procedure BuildEfficiencyMap(var AEfficiencyMap: TEfficiencyArray; ASize: Cardinal;
-  APProcessorInfo: PSystemLogicalProcessorInformationEx);
+procedure BuildEfficiencyMap(var AEfficiencyMap: TEfficiencyArray; const ASize: Cardinal;
+  const APProcessorInfo: PSystemLogicalProcessorInformationEx);
+var
+  LSize: Cardinal;
+  LPProcessorInfo: PSystemLogicalProcessorInformationEx;
 begin
+  LSize := ASize;
+  LPProcessorInfo := APProcessorInfo;
+
   ZeroMemory(@AEfficiencyMap, SizeOf(AEfficiencyMap));
 
   // For each efficiency class create a core mask
-  while ASize > 0 do
+  while LSize > 0 do
   begin
-    if APProcessorInfo.Relationship = RelationProcessorCore then
+    if LPProcessorInfo.Relationship = RelationProcessorCore then
     begin
-      var LProcessor: PProcessorRelationship := @APProcessorInfo.Processor;
+      var LProcessor: PProcessorRelationship := @LPProcessorInfo.Processor;
       var LCoreMask: PKAffinity := @AEfficiencyMap[LProcessor.EfficiencyClass];
 
       for var LIndex := 0 to LProcessor.GroupCount - 1 do
         LCoreMask^ := LCoreMask^ or LProcessor.GroupMask[LIndex].Mask;
     end;
 
-    Dec(ASize, APProcessorInfo.Size);
-    Inc(PByte(APProcessorInfo), APProcessorInfo.Size);
+    Dec(LSize, LPProcessorInfo.Size);
+    Inc(PByte(LPProcessorInfo), LPProcessorInfo.Size);
   end;
 end;
 
-procedure CreateMasksFromEfficiencyMap(const AEfficiencyMap: TEfficiencyArray;
-  out AEfficiencyMask, APerformanceMask: NativeUInt);
+procedure CreateMasksFromEfficiencyMap(const AEfficiencyMap: TEfficiencyArray; var AEfficiencyMask, APerformanceMask: NativeUInt);
 var
   LIndex: Integer;
 begin
@@ -122,8 +127,7 @@ begin
     AEfficiencyMask := 0;
 end;
 
-function GetHybridAffinityMask(const AProcessHandle: THandle; const APerformanceCores: Boolean;
-  const AForce: Boolean): NativeUInt;
+function GetHybridAffinityMask(const AProcessHandle: THandle; const APerformanceCores: Boolean; const AForce: Boolean): NativeUInt;
 var
   LProcessMask: NativeUInt;
   LSystemMask: NativeUInt;
