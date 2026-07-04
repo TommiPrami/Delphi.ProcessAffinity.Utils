@@ -87,15 +87,16 @@ object DPAUMainForm: TDPAUMainForm
     end
   end
   object MemoLog: TMemo
-    Left = 0
-    Top = 41
-    Width = 824
-    Height = 400
+    AlignWithMargins = True
+    Left = 3
+    Top = 44
+    Width = 815
+    Height = 394
     Margins.Right = 6
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -13
+    Font.Height = -15
     Font.Name = 'Consolas'
     Font.Style = []
     ParentFont = False
