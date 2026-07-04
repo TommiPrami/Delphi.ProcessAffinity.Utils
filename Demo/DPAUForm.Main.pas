@@ -3,8 +3,8 @@ unit DPAUForm.Main;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls;
+  Winapi.Messages, Winapi.Windows, System.Classes, System.SysUtils, System.Variants, Vcl.Controls, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.Forms,
+  Vcl.Graphics, Vcl.StdCtrls;
 
 type
   TDPAUMainForm = class(TForm)
@@ -49,10 +49,12 @@ begin
 end;
 
 function TDPAUMainForm.MaskToBits(const AMask: NativeUInt): string;
+var
+  LCpu: Integer;
 begin
   Result := '';
 
-  for var LCpu := 0 to TThread.ProcessorCount - 1 do
+  for LCpu := 0 to TThread.ProcessorCount - 1 do
     if (AMask and (NativeUInt(1) shl LCpu)) <> 0 then
       Result := Result + '1'
     else

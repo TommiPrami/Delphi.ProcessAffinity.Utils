@@ -78,6 +78,9 @@ procedure BuildEfficiencyMap(var AEfficiencyMap: TEfficiencyArray; const ASize: 
 var
   LSize: Cardinal;
   LPProcessorInfo: PSystemLogicalProcessorInformationEx;
+  LProcessor: PProcessorRelationship;
+  LCoreMask: PKAffinity;
+  LIndex: Integer;
 begin
   LSize := ASize;
   LPProcessorInfo := APProcessorInfo;
@@ -89,10 +92,10 @@ begin
   begin
     if LPProcessorInfo.Relationship = RelationProcessorCore then
     begin
-      var LProcessor: PProcessorRelationship := @LPProcessorInfo.Processor;
-      var LCoreMask: PKAffinity := @AEfficiencyMap[LProcessor.EfficiencyClass];
+      LProcessor := @LPProcessorInfo.Processor;
+      LCoreMask := @AEfficiencyMap[LProcessor.EfficiencyClass];
 
-      for var LIndex := 0 to LProcessor.GroupCount - 1 do
+      for LIndex := 0 to LProcessor.GroupCount - 1 do
         LCoreMask^ := LCoreMask^ or LProcessor.GroupMask[LIndex].Mask;
     end;
 
@@ -104,6 +107,7 @@ end;
 procedure CreateMasksFromEfficiencyMap(const AEfficiencyMap: TEfficiencyArray; var AEfficiencyMask, APerformanceMask: NativeUInt);
 var
   LIndex: Integer;
+  LRest: Integer;
 begin
   AEfficiencyMask := 0;
   APerformanceMask := 0;
@@ -119,7 +123,7 @@ begin
   AEfficiencyMask := AEfficiencyMap[LIndex];
 
   // All higher classes are considered performance cores
-  for var LRest := LIndex + 1 to High(AEfficiencyMap) do
+  for LRest := LIndex + 1 to High(AEfficiencyMap) do
     APerformanceMask := APerformanceMask or AEfficiencyMap[LRest];
 
   // Homogeneous CPU: only one efficiency class, so there is no efficiency/performance split
@@ -242,6 +246,7 @@ function SetAffinityMask(const AProcessHandle: THandle; const ANewMask: NativeUI
 var
   LProcessMask: NativeUInt;
   LSystemMask: NativeUInt;
+  LNewMask: NativeUInt;
 begin
   Result := False;
 
@@ -249,7 +254,7 @@ begin
     Exit;
 
   // Mask the new mask with the system mask
-  var LNewMask: NativeUInt := ANewMask and LSystemMask;
+  LNewMask := ANewMask and LSystemMask;
 
   if LNewMask = 0 then
     Exit;
